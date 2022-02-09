@@ -1,0 +1,36 @@
+Задание
+Посчитать среднее время, за которое пользователи проходят урок по следующему алгоритму:
+
+для каждого пользователя вычислить время прохождения шага как сумму времени, потраченного на каждую попытку (время попытки - это разница между временем отправки задания и временем начала попытки), при этом попытки, которые длились больше 4 часов не учитывать, так как пользователь мог просто оставить задание открытым в браузере, а вернуться к нему на следующий день;
+для каждого студента посчитать общее время, которое он затратил на каждый урок;
+вычислить среднее время выполнения урока в часах, результат округлить до 2-х знаков после запятой;
+вывести информацию по возрастанию времени, пронумеровав строки, для каждого урока указать номер модуля и его позицию в нем.
+Столбцы результата назвать Номер, Урок, Среднее_время.
+WITH 
+get_step_time (student_id, step_id, step_time)/* посчитать суммарное время каждого студента по каждому шагу */ 
+  AS (
+    SELECT student_id, step_id, SUM(submission_time - attempt_time) 
+    FROM  step_student JOIN step USING(step_id)
+    WHERE submission_time - attempt_time < 4 * 3600
+    GROUP BY student_id, step_id
+   ), 
+get_lesson_time (student_id, lesson_id, lesson_time)/* посчитать среднее время каждого студента по каждому уроку */ 
+  AS (
+    SELECT student_id, lesson_id,(sum(step_time) / 3600) AS lesson_time
+    FROM get_step_time JOIN step USING(step_id)
+    GROUP BY student_id, lesson_id
+   ),
+get_avg_time (lesson_id, avg_time)/* посчитать среднее время по каждому уроку */ 
+  AS (
+    SELECT lesson_id, ROUND(AVG(lesson_time), 2) AS avg_time 
+    FROM get_lesson_time  
+    GROUP BY 1
+   )
+   /* вывести результат */
+SELECT ROW_NUMBER() OVER (ORDER BY avg_time) AS Номер,
+       CONCAT( module_id, '.', lesson_position, ' ', lesson_name) AS Урок,
+       avg_time AS Среднее_время  
+FROM get_avg_time INNER JOIN lesson USING(lesson_id)
+ORDER BY Среднее_время;
+
+             
