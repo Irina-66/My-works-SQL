@@ -1,0 +1,29 @@
+Задание
+Реализовать поиск по ключевым словам. Вывести шаги, с которыми связаны ключевые слова MAX и AVG одновременно. Для шагов указать id модуля, позицию урока в модуле, позицию шага в уроке через точку, после позиции шага перед заголовком - пробел. Позицию шага в уроке вывести в виде двух цифр (если позиция шага меньше 10, то перед цифрой поставить 0). Столбец назвать Шаг. Информацию отсортировать по первому столбцу в алфавитном порядке.
+SELECT DISTINCT
+    CASE WHEN step_position < 10
+    THEN CONCAT(m.module_id,'.', lesson_position,'.0', step_position,' ', step_name)
+    ELSE CONCAT(m.module_id,'.', lesson_position,'.', step_position,' ', step_name)
+    END AS Шаг
+FROM module m
+        INNER JOIN lesson l ON m.module_id = l.module_id
+        INNER JOIN step s ON l.lesson_id = s.lesson_id
+        INNER JOIN step_keyword sk ON s.step_id = sk.step_id
+        INNER JOIN keyword k ON sk.keyword_id = k.keyword_id
+WHERE s.step_id in
+(
+    SELECT s.step_id
+        FROM keyword k
+        INNER JOIN step_keyword sk ON k.keyword_id = sk.keyword_id
+        INNER JOIN step s ON s.step_id = sk.step_id        
+        WHERE keyword_name like '%AVG%' and s.step_id IN
+        (
+            SELECT s.step_id
+            FROM keyword k
+            INNER JOIN step_keyword sk ON k.keyword_id = sk.keyword_id
+            INNER JOIN step s ON s.step_id = sk.step_id        
+            WHERE keyword_name like '%MAX%'
+        )
+)
+ORDER BY 1;  
+
